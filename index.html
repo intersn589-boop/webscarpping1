@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scraper Dashboard</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#f7f7fb; margin:0; padding:2rem; }
+    .card { background:#fff; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 8px 30px rgba(0,0,0,.06); margin-bottom:1rem; }
+    input, select, button { padding:.6rem; border-radius:10px; border:1px solid #e5e7eb; }
+    button { background:#4f46e5; color:#fff; border:none; cursor:pointer; }
+    button:hover { background:#4338ca; }
+    .row { display:grid; grid-template-columns: 2fr 1fr auto; gap:.5rem; }
+    table { width:100%; border-collapse: collapse; margin-top:.75rem; }
+    th, td { text-align:left; padding:.5rem; border-bottom:1px solid #eee; }
+    a.btn { background:#111827; color:#fff; padding:.4rem .6rem; border-radius:8px; text-decoration:none; margin-right:.35rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Scrape</h2>
+    <form method="post" action="/scrape" class="row">
+      <input name="urls" placeholder="https://example.com, https://another.com" required />
+      <select name="format_choice">
+        <option value="json">JSON</option>
+        <option value="csv">CSV</option>
+      </select>
+      <button type="submit">Start</button>
+    </form>
+    <small>Files are stored as BLOBs in DB and on disk; text lines are stored for search.</small>
+  </div>
+
+  <div class="card">
+    <h2>Sites</h2>
+    <table>
+      <thead><tr><th>ID</th><th>URL</th><th>File</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in sites %}
+        <tr>
+          <td>{{s.id}}</td>
+          <td>{{s.base_url}}</td>
+          <td>{{s.file_name or "-"}}</td>
+          <td>
+            <a class="btn" href="/download/{{s.id}}">Download</a>
+            <a class="btn" href="/view-data/{{s.id}}" target="_blank">View JSON</a>
+            <a class="btn" href="/search?site_id={{s.id}}&q=admissions" target="_blank">Keyword</a>
+            <a class="btn" href="/embed/{{s.id}}" onclick="alert('Embedding started; check response'); return true;">Embed</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p><a class="btn" href="/search">Open Search Page</a></p>
+  </div>
+</body>
+</html>

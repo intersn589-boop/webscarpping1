@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Search</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#f7f7fb; padding:2rem; }
+    .card { background:#fff; border-radius:14px; padding:1rem 1.25rem; box-shadow:0 8px 30px rgba(0,0,0,.06); margin-bottom:1rem; }
+    input, button { padding:.6rem; border-radius:10px; border:1px solid #e5e7eb; }
+    button { background:#4f46e5; color:#fff; border:none; cursor:pointer; }
+    button:hover { background:#4338ca; }
+    .item { padding:.5rem 0; border-bottom:1px dashed #e5e7eb; }
+    code { background:#f3f4f6; padding:.1rem .35rem; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Keyword Search (DB)</h2>
+    <form method="get" action="/search">
+      <input name="q" placeholder="keyword..." value="{{ keyword or '' }}" />
+      <input name="site_id" placeholder="site id (optional)" value="{{ site_id or '' }}" />
+      <button type="submit">Search</button>
+    </form>
+    <div style="margin-top:.5rem;">Endpoint: <code>/search?q=...&site_id=...</code></div>
+  </div>
+
+  {% if results is defined %}
+  <div class="card">
+    <h3>Results — {{ results|length }}</h3>
+    {% for r in results %}
+      <div class="item">
+        <div><a href="{{ r.url }}" target="_blank">{{ r.url }}</a></div>
+        <div>{{ r.text }}</div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Semantic Search (FAISS)</h2>
+    <form onsubmit="doSem(event)">
+      <input id="q" placeholder="natural language query..." />
+      <input id="sid" placeholder="site id (required)" />
+      <input id="k" placeholder="k (e.g. 6)" value="6" />
+      <button>Search</button>
+    </form>
+    <div id="semres"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ask (LLM) with Context</h2>
+    <form onsubmit="doAsk(event)">
+      <input id="aq" placeholder="your question..." />
+      <input id="asid" placeholder="site id (required)" />
+      <button>Ask</button>
+    </form>
+    <div id="answer"></div>
+    <small>Requires <code>OPENAI_API_KEY</code> env var to actually call the LLM. Otherwise you'll just get the context.</small>
+  </div>
+
+<script>
+async function doSem(e){
+  e.preventDefault();
+  const q = encodeURIComponent(document.getElementById('q').value.trim());
+  const sid = encodeURIComponent(document.getElementById('sid').value.trim());
+  const k = encodeURIComponent(document.getElementById('k').value.trim() || '6');
+  const res = await fetch(`/semantic_search?q=${q}&site_id=${sid}&k=${k}`);
+  const data = await res.json();
+  document.getElementById('semres').innerHTML =
+    `<p><b>${data.length}</b> results</p>` +
+    data.map(r => `<div class="item"><div>[${r.rank}] score=${r.score.toFixed(4)} <a href="${r.url}" target="_blank">${r.url}</a></div><div>${r.text}</div></div>`).join('');
+}
+
+async function doAsk(e){
+  e.preventDefault();
+  const form = new FormData();
+  form.append('q', document.getElementById('aq').value);
+  form.append('site_id', document.getElementById('asid').value);
+  const res = await fetch('/ask', {method:'POST', body: form});
+  const data = await res.json();
+  document.getElementById('answer').innerText = data.answer || JSON.stringify(data, null, 2);
+}
+</script>
+</body>
+</html>
